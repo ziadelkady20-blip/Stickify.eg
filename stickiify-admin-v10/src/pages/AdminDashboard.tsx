@@ -571,7 +571,7 @@ function ProductFormModal({
         descriptionAr: form.descriptionAr.trim() || form.nameAr.trim() || form.name,
         categoryId: form.categoryId,
         price: Number(form.price),
-        discountPrice: form.discountPrice ? Number(form.discountPrice) : undefined,
+        discountPrice: form.discountPrice ? Number(form.discountPrice) : null,
         stock: Number(form.stock),
         featured: form.featured,
         bestSeller: form.bestSeller,
@@ -579,8 +579,8 @@ function ProductFormModal({
         status: form.status,
         tags,
         variants: variants.filter((v) => v.name.trim()),
-        seoTitle: form.seoTitle || undefined,
-        seoDescription: form.seoDescription || undefined,
+        seoTitle: form.seoTitle || null,
+        seoDescription: form.seoDescription || null,
         updatedAt: new Date().toISOString(),
       };
       await onSave(productData, allImages, imageFiles);
