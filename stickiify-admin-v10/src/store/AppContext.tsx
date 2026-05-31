@@ -180,7 +180,7 @@ function loadJSON<T>(key: string, fallback: T): T {
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => loadJSON(LS.lang, "en" as Lang));
+  const [lang, setLangState] = useState<Lang>(() => loadJSON(LS.lang, "ar" as Lang));
   const [theme, setTheme] = useState<"light" | "dark">(() => loadJSON(LS.theme, "light"));
   const [user, setUser] = useState<User>(null);
   const [cart, setCart] = useState<CartItem[]>(() => loadJSON(LS.cart, []));
