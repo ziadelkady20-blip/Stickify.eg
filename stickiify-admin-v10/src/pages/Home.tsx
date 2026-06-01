@@ -304,9 +304,9 @@ export default function Home() {
               href="https://www.instagram.com/stickiify.eg"
               target="_blank"
               rel="noreferrer"
-              className="relative group aspect-square rounded-2xl overflow-hidden"
+className="relative group aspect-square rounded-2xl overflow-hidden block"
             >
-              <img src={src} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+              <img src={src} alt="" className="w-full h-full object-cover absolute inset-0 transition-transform duration-500 group-hover:scale-110" />
               <div className="absolute inset-0 bg-brand-green/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <Camera className="text-brand-lime" size={32} />
               </div>
