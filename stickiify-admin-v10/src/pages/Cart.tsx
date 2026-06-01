@@ -111,7 +111,7 @@ export default function Cart() {
 
 /* ---------------- CHECKOUT ---------------- */
 export function Checkout() {
-  const { t, lang, cart, createOrder, clearCart, toast, user, products, uploadImage } = useApp();
+  const { t, lang, cart, createOrder, clearCart, toast, user, products } = useApp();
   const [step, setStep] = useState<"form" | "payment" | "done">("form");
   const [payment, setPayment] = useState<"cod" | "vodafone">("cod");
   const [screenshot, setScreenshot] = useState<File | null>(null);
@@ -150,15 +150,9 @@ export function Checkout() {
     return Object.keys(e).length === 0;
   };
 
+  // ✅ FIX: createOrder is async (writes to Firestore), must be awaited
   const handlePlaceOrder = async () => {
     try {
-      // رفع صورة التحويل على Firebase Storage أولاً لو موجودة
-      let screenshotUrl: string | undefined = undefined;
-      if (payment === "vodafone" && screenshot) {
-        toast(lang === "en" ? "Uploading screenshot..." : "جاري رفع صورة التحويل...");
-        screenshotUrl = await uploadImage(screenshot, "vodafone-screenshots");
-      }
-
       const id = await createOrder({
         user: user?.email || "guest@stickiify.eg",
         products: items.map((i) => ({ productId: i.productId, quantity: i.quantity, price: i.product!.price })),
@@ -172,14 +166,13 @@ export function Checkout() {
         governorate: form.governorate,
         notes: form.notes,
         senderPhone: payment === "vodafone" ? senderPhone : undefined,
-        screenshot: screenshotUrl,
+        screenshot: screenshot ? URL.createObjectURL(screenshot) : undefined,
       });
       setOrderId(id);
       clearCart();
       setStep("done");
       toast(t.checkout.success + " " + id);
-    } catch (err: any) {
-      console.error("[handlePlaceOrder] ❌", err);
+    } catch {
       toast(lang === "en" ? "Failed to place order. Try again." : "فشل إرسال الطلب. حاول تاني.", "error");
     }
   };
@@ -254,9 +247,13 @@ export function Checkout() {
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-brand-green/10 rounded-2xl p-5 space-y-4">
                 <div>
                   <p className="text-sm text-brand-black/70 dark:text-brand-white/70 mb-1">{t.checkout.vodafoneNumber}</p>
-                  <p className="text-2xl font-black text-brand-green" dir="ltr" style={{ unicodeBidi: "embed" }}>
-                    +20 110 793 0397
-                  </p>
+                 <p 
+  className="text-2xl font-black text-brand-green" 
+  dir="ltr"       // ← دي الإضافة المهمة
+  style={{ unicodeBidi: "embed" }}
+>
+  +20 110 793 0397
+</p>
                 </div>
                 <Input label={t.checkout.senderPhone} value={senderPhone} onChange={(e) => setSenderPhone(e.target.value)} />
                 <div>
