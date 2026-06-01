@@ -120,6 +120,7 @@ type AppState = {
 
   categories: Category[];
   addCategory: (c: Category) => void;
+  updateCategory: (id: string, patch: Partial<Category>) => void;
   deleteCategory: (id: string) => void;
 
   orders: Order[];
