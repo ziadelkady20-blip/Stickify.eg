@@ -52,7 +52,7 @@ export default function Home() {
           >
             <motion.div variants={fadeUp}>
               <Badge color="green" className="mb-4">
-                🇬 {lang === "en" ? "Made in Egypt" : "صناعة مصرية"}
+                🇬 {lang === "en" ? "Made in Egypt" : "صنع في مصر"}
               </Badge>
               <h1 className="text-5xl md:text-7xl font-black leading-[1.05] tracking-tight text-brand-black dark:text-brand-white">
                 {lang === "ar" ? heroContent.title1Ar : heroContent.title1En}
@@ -153,8 +153,8 @@ export default function Home() {
       {features.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 md:px-8">
           <SectionHeader
-            title={lang === "en" ? "Why Stickiify?" : "ليه تختار Stickiify؟"}
-            subtitle={lang === "en" ? "Premium quality, fast shipping, and custom designs." : "جودة عالية، توصيل سريع، وتصميمات مخصصة."}
+            title={lang === "en" ? "Why Stickify?" : "ليه تختار Stickify؟"}
+            subtitle={lang === "en" ? "Premium quality, fast shipping, and custom designs." : "طباعة نضيفة، توصيل سريع، وتصميم على مزاجك."}
             badge="✨"
           />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
@@ -322,7 +322,7 @@ export default function Home() {
           <div className="relative">
             <Sparkles className="mx-auto text-brand-lime mb-4" size={40} />
             <h2 className="text-3xl md:text-5xl font-black text-brand-white mb-4">
-              {lang === "en" ? "Ready to make it yours?" : "جاهز تصممه لنفسك؟"}
+              {lang === "en" ? "Ready to make it yours?" : "جاهز تصمم دلوقتي؟"}
             </h2>
             <p className="text-brand-lime/80 text-lg mb-8">
               {lang === "en" ? "Upload your design and we'll print it on anything." : "ارفع تصميمك واحنا هنطبعه على أي حاجة."}
