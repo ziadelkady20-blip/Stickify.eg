@@ -606,7 +606,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         cart, addToCart, removeFromCart, updateQty, clearCart,
         wishlist, toggleWishlist,
         products, addProduct, updateProduct, deleteProduct,
-        categories, addCategory, deleteCategory,
+        categories, addCategory, updateCategory, deleteCategory,
         orders, customRequests, allUsers,
         createOrder, createRequest,
         updateOrderStatus, updatePaymentStatus, updateRequestStatus, updateShippingInfo,
