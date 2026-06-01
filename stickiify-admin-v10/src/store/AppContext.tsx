@@ -494,8 +494,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   // ── Categories CRUD (Firestore) ───────────────────────────────────────────
-  const addCategory = async (c: Category) => {
+ const addCategory = async (c: Category) => {
     await setDoc(doc(db, "categories", c.id), c);
+  };
+
+  const updateCategory = async (id: string, patch: Partial<Category>) => {
+    await updateDoc(doc(db, "categories", id), patch as any);
   };
   const deleteCategory = async (id: string) => {
     await deleteDoc(doc(db, "categories", id));
