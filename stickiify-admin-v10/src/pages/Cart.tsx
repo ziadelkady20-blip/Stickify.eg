@@ -247,7 +247,13 @@ export function Checkout() {
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-brand-green/10 rounded-2xl p-5 space-y-4">
                 <div>
                   <p className="text-sm text-brand-black/70 dark:text-brand-white/70 mb-1">{t.checkout.vodafoneNumber}</p>
-                  <p className="text-2xl font-black text-brand-green">+20 110 793 0397</p>
+                 <p 
+  className="text-2xl font-black text-brand-green" 
+  dir="ltr"       // ← دي الإضافة المهمة
+  style={{ unicodeBidi: "embed" }}
+>
+  +20 110 793 0397
+</p>
                 </div>
                 <Input label={t.checkout.senderPhone} value={senderPhone} onChange={(e) => setSenderPhone(e.target.value)} />
                 <div>
