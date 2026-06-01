@@ -38,6 +38,7 @@ export type Category = {
   slug: string;
   image: string;
   active: boolean;
+  parentId?: string;
 };
 
 export type Review = {
