@@ -87,7 +87,7 @@ export default function Home() {
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Shield size={18} className="text-brand-lime" />
-                <span className="text-brand-black/70 dark:text-brand-white/70">{lang === "en" ? "Premium Quality" : "جودة عالية"}</span>
+                <span className="text-brand-black/70 dark:text-brand-white/70">{lang === "en" ? "Premium Quality" : "خامة نضيفة وطباعة ثابتة"}</span>
               </div>
             </motion.div>
           </motion.div>
