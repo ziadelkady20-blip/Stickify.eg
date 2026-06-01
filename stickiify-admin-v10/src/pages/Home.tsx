@@ -298,7 +298,7 @@ export default function Home() {
           </a>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {["/category-stickers.jpg", "/category-laptop.jpg", "/category-mug.jpg", "/hero.jpg"].map((src, i) => (
+          {["/category-stickers.jpg", "/category-laptop.jpg", "/category-mug.jpg", "/category-mug.jpg"].map((src, i) => (
             <a
               key={i}
               href="https://www.instagram.com/stickiify.eg"
