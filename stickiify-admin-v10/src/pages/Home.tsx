@@ -19,7 +19,7 @@ export default function Home() {
   const faqs = [
     {
       q: lang === "en" ? "How long does delivery take?" : "التوصيل بياخد وقت قد إيه؟",
-      a: lang === "en" ? "2-5 working days inside Cairo/Giza, up to 7 days for other governorates." : "٢-٥ أيام جوه القاهرة والجيزة، لغاية ٧ أيام للمحافظات التانية.",
+      a: lang === "en" ? "2-5 working days inside Cairo/Giza, up to 7 days for other governorates." : "خلال يومين في جميع محافظات مصر.",
     },
     {
       q: lang === "en" ? "Are the stickers waterproof?" : "الستيكرز مضادة للماء؟",
