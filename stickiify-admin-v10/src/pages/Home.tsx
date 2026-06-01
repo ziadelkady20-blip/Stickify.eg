@@ -23,7 +23,7 @@ export default function Home() {
     },
     {
       q: lang === "en" ? "Are the stickers waterproof?" : "الستيكرز مضادة للماء؟",
-      a: lang === "en" ? "Yes! All our stickers are printed on premium waterproof vinyl." : "أيوه! كل الستيكرز مطبوعة على فينيل بريميوم مضاد للماء.",
+      a: lang === "en" ? "Yes! All our stickers are printed on premium waterproof vinyl." : "طباعة تعيش معاك فينيل بريميوم ضدالمياه والالوان ثابتة مش بتبهت بسهولة",
     },
     {
       q: lang === "en" ? "Can I return my order?" : "أقدر أرجع الطلب؟",
