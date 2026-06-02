@@ -70,7 +70,7 @@ const DEFAULT_HERO: HeroContent = {
 };
 
 const DEFAULT_FEATURES: Feature[] = [
-  { id: "f1", icon: "🚚", titleEn: "Fast Delivery", titleAr: "توصيل سريع", descEn: "2-5 days Cairo/Giza, up to 7 days nationwide.", descAr: "٢-٥ أيام القاهرة والجيزةو الفيوم، لغاية ٧ أيام للمحافظات.", order: 1 },
+  { id: "f1", icon: "🚚", titleEn: "Fast Delivery", titleAr: "توصيل سريع", descEn: "2-5 days Cairo/Giza, up to 7 days nationwide.", descAr: "٢-٥ أيام القاهرة والجيزة و الفيوم، لغاية ٧ أيام للمحافظات.", order: 1 },
   { id: "f2", icon: "🛡️", titleEn: "Quality Guaranteed", titleAr: "جودة مضمونة", descEn: "Premium waterproof vinyl for lasting prints.", descAr: "فينيل بريميوم مضاد للماء لطباعة تدوم.", order: 2 },
   { id: "f3", icon: "🎨", titleEn: "Custom Designs", titleAr: "تصميمات مخصصة", descEn: "Send your design, we'll make it perfect.", descAr: "ابعت تصميمك وأحنا نعمله تحفة.", order: 3 },
   { id: "f4", icon: "✨", titleEn: "Premium Finish", titleAr: "تشطيب بريميوم", descEn: "Glossy, matte, holographic — your choice.", descAr: "لامع، مات، هولوجرافيك — اختارك.", order: 4 },
