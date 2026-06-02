@@ -539,9 +539,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ── Upload Image to Firebase Storage ─────────────────────────────────────
   const uploadImage = async (file: File, folder: string): Promise<string> => {
-    const storageRef = ref(storage, `${folder}/${Date.now()}_${file.name}`);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
+    console.log(`[uploadImage] Starting upload | folder: ${folder} | file: ${file.name} | size: ${(file.size / 1024).toFixed(1)}KB`);
+    try {
+      const timestamp = Date.now();
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const storageRef = ref(storage, `${folder}/${timestamp}_${safeName}`);
+      
+      console.log(`[uploadImage] Uploading to path: ${folder}/${timestamp}_${safeName}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      console.log(`[uploadImage] ✅ Upload complete | bytes transferred: ${snapshot.metadata.size}`);
+      
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log(`[uploadImage] ✅ Download URL obtained: ${downloadURL}`);
+      
+      return downloadURL;
+    } catch (err) {
+      console.error(`[uploadImage] ❌ Upload failed | folder: ${folder} | file: ${file.name}`, err);
+      throw err; // إعادة الخطأ للـ caller يتعامل معه بشكل صحيح
+    }
   };
 
   // ── Orders (Firestore) ────────────────────────────────────────────────────
@@ -558,7 +573,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const order = Object.fromEntries(
       Object.entries(raw).filter(([, v]) => v !== undefined)
     ) as Order;
+    
+    console.log(`[createOrder] Saving order ${id} to Firestore | paymentMethod: ${order.paymentMethod} | screenshot: ${order.screenshot || "none"}`);
     await setDoc(doc(db, "orders", id), order);
+    console.log(`[createOrder] ✅ Order ${id} saved successfully`);
     return id;
   };
 
@@ -583,7 +601,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ── Custom Requests (Firestore) ───────────────────────────────────────────
   const createRequest = async (r: Omit<CustomRequest, "id" | "createdAt">) => {
     const id = "REQ-" + Date.now();
+    console.log(`[createRequest] Saving request ${id} to Firestore | image: ${r.image || "none"}`);
     await setDoc(doc(db, "requests", id), { ...r, id, createdAt: new Date().toISOString() });
+    console.log(`[createRequest] ✅ Request ${id} saved successfully`);
   };
 
   const updateRequestStatus = async (id: string, status: CustomRequest["status"]) => {
