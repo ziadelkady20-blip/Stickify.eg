@@ -6,35 +6,66 @@ import { useApp } from "../store/AppContext";
 import { Button, Textarea, Select } from "../components/ui";
 
 export default function CustomDesign() {
-  const { t, lang, createRequest, toast, categories } = useApp();
+  const { t, lang, createRequest, toast, categories, uploadImage } = useApp();
   const [form, setForm] = useState({ productType: "", notes: "" });
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
   const productTypes = categories.filter((c) => c.id !== "cat-custom");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.productType || !image) {
       toast(lang === "en" ? "Please fill all required fields" : "املأ كل الحقول المطلوبة", "error");
       return;
     }
-    createRequest({
-      userName: "Guest",
-      userEmail: "guest@stickiify.eg",
-      productType: form.productType,
-      notes: form.notes,
-      image: preview,
-      status: "pending",
-    });
-    setDone(true);
-    toast(t.custom.success);
+    setSubmitting(true);
+    try {
+      // ✅ FIX: رفع الصورة لـ Firebase Storage والحصول على Download URL دائم
+      // بدلًا من استخدام URL.createObjectURL() الذي يختفي بعد إغلاق الصفحة
+      console.log("[CustomDesign] Uploading design image to Firebase Storage...");
+      let imageUrl: string;
+      try {
+        imageUrl = await uploadImage(image, "custom-designs");
+        console.log("[CustomDesign] ✅ Image uploaded successfully:", imageUrl);
+      } catch (uploadErr) {
+        console.error("[CustomDesign] ❌ Image upload failed:", uploadErr);
+        toast(
+          lang === "en"
+            ? "Failed to upload your design image. Please try again."
+            : "فشل رفع صورة التصميم. حاول تاني.",
+          "error"
+        );
+        setSubmitting(false);
+        return;
+      }
+
+      console.log("[CustomDesign] Creating custom request in Firestore...");
+      await createRequest({
+        userName: "Guest",
+        userEmail: "guest@stickiify.eg",
+        productType: form.productType,
+        notes: form.notes,
+        image: imageUrl, // ✅ Firebase Storage URL دائم
+        status: "pending",
+      });
+      console.log("[CustomDesign] ✅ Custom request created with permanent image URL");
+      setDone(true);
+      toast(t.custom.success);
+    } catch (err) {
+      console.error("[CustomDesign] ❌ Request creation failed:", err);
+      toast(lang === "en" ? "Failed to submit request. Try again." : "فشل إرسال الطلب. حاول تاني.", "error");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleImage = (f: File | null) => {
     if (!f) return;
     setImage(f);
+    // ✅ URL.createObjectURL للمعاينة المحلية فقط — لا يُحفظ في DB
     setPreview(URL.createObjectURL(f));
   };
 
@@ -80,8 +111,10 @@ export default function CustomDesign() {
             rows={5}
             placeholder={lang === "en" ? "Describe what you want..." : "اوصف اللي عايزه..."}
           />
-          <Button type="submit" size="lg" className="w-full">
-            <Send size={18} /> {t.custom.submit}
+          <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+            {submitting
+              ? (lang === "en" ? "Uploading & Sending…" : "جاري الرفع والإرسال…")
+              : <><Send size={18} /> {t.custom.submit}</>}
           </Button>
         </div>
 
