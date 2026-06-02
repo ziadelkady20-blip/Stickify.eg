@@ -296,23 +296,44 @@ export default function Home() {
           >
             {t.insta.handle}
           </a>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {["/category-stickers.jpg", "/category-laptop.jpg", "/category-mug.jpg", "/سكنززز.jpg"].map((src, i) => (
-            <a
-              key={i}
-              href="https://www.instagram.com/stickiify.eg"
-              target="_blank"
-              rel="noreferrer"
-className="relative group aspect-square rounded-2xl overflow-hidden block"
-            >
-              <img src={src} alt="" className="w-full h-full object-cover absolute inset-0 transition-transform duration-500 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-brand-green/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <Camera className="text-brand-lime" size={32} />
-              </div>
-            </a>
-          ))}
-        </div>
+       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+  {[
+    {
+      img: "/category-stickers.jpg",
+      link: "https://www.instagram.com/stickiify.eg/"
+    },
+    {
+      img: "/category-laptop.jpg",
+      link: "https://www.facebook.com/profile.php?id=61590226422383"
+    },
+    {
+      img: "/category-mug.jpg",
+      link: "PUT_TIKTOK_LINK_HERE"
+    },
+    {
+      img: "/سكنززز.jpg",
+      link: "https://wa.me/201107930397"
+    }
+  ].map((item, i) => (
+    <a
+      key={i}
+      href={item.link}
+      target="_blank"
+      rel="noreferrer"
+      className="relative group aspect-square rounded-2xl overflow-hidden block"
+    >
+      <img
+        src={item.img}
+        alt=""
+        className="w-full h-full object-cover absolute inset-0 transition-transform duration-500 group-hover:scale-110"
+      />
+
+      <div className="absolute inset-0 bg-brand-green/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+        <Camera className="text-brand-lime" size={32} />
+      </div>
+    </a>
+  ))}
+</div>
       </section>
 
       {/* CTA */}
