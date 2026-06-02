@@ -26,7 +26,7 @@ import {
   type User as FirebaseUser,
 } from "firebase/auth";
 import { db, auth, storage } from "../lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
 import { translations, type Lang } from "../lib/i18n";
 import {
   products as seedProducts,
@@ -488,39 +488,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateFeature = async (id: string, patch: Partial<Feature>) => { await updateDoc(doc(db, "features", id), patch as any); };
   const deleteFeature = async (id: string) => { await deleteDoc(doc(db, "features", id)); };
 
-  // ── Upload Image to Firebase Storage ─────────────────────────────────────
-  const uploadImage = async (file: File, folder: string): Promise<string> => {
-    console.log(`[uploadImage] Starting | folder: ${folder} | file: ${file.name}`);
+  // ── Upload Image to Cloudinary ─────────────────────────────────────
+const uploadImage = async (file: File, folder: string): Promise<string> => {
+  console.log(`[uploadImage] Starting Cloudinary upload`);
 
-    const TIMEOUT_MS = 15000;
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Upload timed out")), TIMEOUT_MS)
+  try {
+    const formData = new FormData();
+
+    formData.append("file", file);
+    formData.append("upload_preset", "stickify_upload");
+    formData.append("folder", folder);
+
+    const res = await fetch(
+      "https://api.cloudinary.com/v1_1/dvralpxes/image/upload",
+      {
+        method: "POST",
+        body: formData,
+      }
     );
 
-    try {
-      const timestamp = Date.now();
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const storageRef = ref(storage, `${folder}/${timestamp}_${safeName}`);
+    const data = await res.json();
 
-      const snapshot = await Promise.race([
-        uploadBytes(storageRef, file),
-        timeoutPromise,
-      ]);
-      console.log(`[uploadImage] ✅ Upload complete`);
-
-      const downloadURL = await Promise.race([
-        getDownloadURL(storageRef),
-        timeoutPromise,
-      ]);
-      console.log(`[uploadImage] ✅ URL: ${downloadURL}`);
-
-      return downloadURL;
-    } catch (err: any) {
-      console.error(`[uploadImage] ❌ Failed: ${err?.message}`);
-      throw err;
+    if (!data.secure_url) {
+      throw new Error("Cloudinary upload failed");
     }
-  };
 
+    console.log(`[uploadImage] URL: ${data.secure_url}`);
+
+    return data.secure_url;
+  } catch (err: any) {
+    console.error(`[uploadImage] Failed: ${err?.message}`);
+    throw err;
+  }
+};
   // ── Orders (Firestore) ────────────────────────────────────────────────────
   const createOrder = async (o: Omit<Order, "id" | "createdAt" | "history">) => {
     const id = "ORD-" + Date.now();
