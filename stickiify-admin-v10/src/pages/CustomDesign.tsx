@@ -15,6 +15,14 @@ export default function CustomDesign() {
 
   const productTypes = categories.filter((c) => c.id !== "cat-custom");
 
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.productType || !image) {
@@ -23,40 +31,37 @@ export default function CustomDesign() {
     }
     setSubmitting(true);
     try {
-      // ✅ FIX: رفع الصورة لـ Firebase Storage والحصول على Download URL دائم
-      // بدلًا من استخدام URL.createObjectURL() الذي يختفي بعد إغلاق الصفحة
-      console.log("[CustomDesign] Uploading design image to Firebase Storage...");
       let imageUrl: string;
       try {
+        console.log("[CustomDesign] Uploading to Firebase Storage...");
         imageUrl = await uploadImage(image, "custom-designs");
-        console.log("[CustomDesign] ✅ Image uploaded successfully:", imageUrl);
-      } catch (uploadErr) {
-        console.error("[CustomDesign] ❌ Image upload failed:", uploadErr);
-        toast(
-          lang === "en"
-            ? "Failed to upload your design image. Please try again."
-            : "فشل رفع صورة التصميم. حاول تاني.",
-          "error"
-        );
-        setSubmitting(false);
-        return;
+        console.log("[CustomDesign] ✅ Storage upload success:", imageUrl);
+      } catch (uploadErr: any) {
+        console.warn("[CustomDesign] ⚠️ Storage failed, using base64:", uploadErr?.message);
+        try {
+          imageUrl = await fileToBase64(image);
+          console.log("[CustomDesign] ✅ base64 ready");
+          toast(lang === "en" ? "Image saved (offline mode)" : "تم حفظ الصورة", "info");
+        } catch {
+          toast(lang === "en" ? "Failed to process image." : "فشل معالجة الصورة.", "error");
+          setSubmitting(false);
+          return;
+        }
       }
 
-      console.log("[CustomDesign] Creating custom request in Firestore...");
       await createRequest({
         userName: "Guest",
         userEmail: "guest@stickiify.eg",
         productType: form.productType,
         notes: form.notes,
-        image: imageUrl, // ✅ Firebase Storage URL دائم
+        image: imageUrl,
         status: "pending",
       });
-      console.log("[CustomDesign] ✅ Custom request created with permanent image URL");
       setDone(true);
       toast(t.custom.success);
     } catch (err) {
-      console.error("[CustomDesign] ❌ Request creation failed:", err);
-      toast(lang === "en" ? "Failed to submit request. Try again." : "فشل إرسال الطلب. حاول تاني.", "error");
+      console.error("[CustomDesign] ❌ Failed:", err);
+      toast(lang === "en" ? "Failed to submit. Try again." : "فشل الإرسال. حاول تاني.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -65,7 +70,6 @@ export default function CustomDesign() {
   const handleImage = (f: File | null) => {
     if (!f) return;
     setImage(f);
-    // ✅ URL.createObjectURL للمعاينة المحلية فقط — لا يُحفظ في DB
     setPreview(URL.createObjectURL(f));
   };
 
