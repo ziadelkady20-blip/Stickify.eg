@@ -322,7 +322,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     
-    seedFirestore();
+    
   }, []);
 
   const setLang = (l: Lang) => setLangState(l);
