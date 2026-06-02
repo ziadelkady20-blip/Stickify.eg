@@ -886,15 +886,29 @@ function ProductsTab() {
   const openEdit = (p: Product) => { setEditProduct(p); setFormOpen(true); };
 
   const handleSave = async (data: Partial<Product>, urlImages: string[], imageFiles: File[]) => {
-    // Upload pending files
+    // ✅ FIX: رفع الصور لـ Firebase Storage والحصول على Download URLs دائمة
+    // بدلًا من استخدام URL.createObjectURL() كـ fallback يختفي عند إغلاق الصفحة
     let uploadedUrls: string[] = [];
     if (imageFiles.length > 0) {
       toast(`Uploading ${imageFiles.length} image(s)…`, "info");
-      uploadedUrls = await Promise.all(
-        imageFiles.map((f) =>
-          uploadImage(f, "products").catch(() => URL.createObjectURL(f))
-        )
+      console.log(`[AdminDashboard] Uploading ${imageFiles.length} product image(s) to Firebase Storage...`);
+      const results = await Promise.allSettled(
+        imageFiles.map((f) => uploadImage(f, "products"))
       );
+      for (const [i, result] of results.entries()) {
+        if (result.status === "fulfilled") {
+          console.log(`[AdminDashboard] ✅ Image ${i + 1} uploaded:`, result.value);
+          uploadedUrls.push(result.value);
+        } else {
+          console.error(`[AdminDashboard] ❌ Image ${i + 1} upload failed:`, result.reason);
+          // ✅ لا نستخدم blob URL كـ fallback — نُبلّغ المستخدم بالخطأ
+          toast(`Failed to upload image ${i + 1}. Please re-select it and try again.`, "error");
+        }
+      }
+      if (uploadedUrls.length === 0 && imageFiles.length > 0) {
+        toast("All image uploads failed. Product not saved.", "error");
+        return;
+      }
     }
     const finalImages = [...urlImages, ...uploadedUrls];
     const images = finalImages.length > 0 ? finalImages : editProduct?.images || ["/category-stickers.jpg"];
@@ -1190,13 +1204,17 @@ function CategoriesTab() {
       toast("Please fill in the category name", "error");
       return;
     }
-    let finalImage = imageUrl || imagePreview || "/category-stickers.jpg";
+    let finalImage = imageUrl || "/category-stickers.jpg";
     if (imageFile) {
       try {
         toast("Uploading image...", "info");
+        console.log("[Categories] Uploading category image to Firebase Storage...");
         finalImage = await uploadImage(imageFile, "categories");
-      } catch {
-        finalImage = imagePreview || imageUrl || "/category-stickers.jpg";
+        console.log("[Categories] ✅ Category image uploaded:", finalImage);
+      } catch (err) {
+        console.error("[Categories] ❌ Category image upload failed:", err);
+        toast("Failed to upload image. Please try again.", "error");
+        return; // ✅ لا نكمل بـ blob URL — نوقف العملية
       }
     }
     const slug = form.slug || form.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
