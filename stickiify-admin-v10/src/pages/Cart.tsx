@@ -111,10 +111,11 @@ export default function Cart() {
 
 /* ---------------- CHECKOUT ---------------- */
 export function Checkout() {
-  const { t, lang, cart, createOrder, clearCart, toast, user, products } = useApp();
+  const { t, lang, cart, createOrder, clearCart, toast, user, products, uploadImage } = useApp();
   const [step, setStep] = useState<"form" | "payment" | "done">("form");
   const [payment, setPayment] = useState<"cod" | "vodafone">("cod");
   const [screenshot, setScreenshot] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [senderPhone, setSenderPhone] = useState("");
   const [orderId, setOrderId] = useState("");
   const [form, setForm] = useState({ name: user?.name || "", phone: user?.phone || "", address: "", governorate: "Cairo", notes: "" });
@@ -150,9 +151,32 @@ export function Checkout() {
     return Object.keys(e).length === 0;
   };
 
-  // ✅ FIX: createOrder is async (writes to Firestore), must be awaited
   const handlePlaceOrder = async () => {
     try {
+      setUploading(true);
+
+      // ✅ FIX: رفع الصورة لـ Firebase Storage أولاً والحصول على Download URL دائم
+      // بدلًا من URL.createObjectURL() الذي يختفي بعد إغلاق الصفحة
+      let screenshotUrl: string | undefined = undefined;
+      if (payment === "vodafone" && screenshot) {
+        console.log("[Checkout] Uploading payment screenshot to Firebase Storage...");
+        try {
+          screenshotUrl = await uploadImage(screenshot, "payment-screenshots");
+          console.log("[Checkout] ✅ Screenshot uploaded successfully:", screenshotUrl);
+        } catch (uploadErr) {
+          console.error("[Checkout] ❌ Screenshot upload failed:", uploadErr);
+          toast(
+            lang === "en"
+              ? "Failed to upload payment screenshot. Please try again."
+              : "فشل رفع صورة إثبات الدفع. حاول تاني.",
+            "error"
+          );
+          setUploading(false);
+          return;
+        }
+      }
+
+      console.log("[Checkout] Creating order in Firestore...");
       const id = await createOrder({
         user: user?.email || "guest@stickiify.eg",
         products: items.map((i) => ({ productId: i.productId, quantity: i.quantity, price: i.product!.price })),
@@ -166,14 +190,18 @@ export function Checkout() {
         governorate: form.governorate,
         notes: form.notes,
         senderPhone: payment === "vodafone" ? senderPhone : undefined,
-        screenshot: screenshot ? URL.createObjectURL(screenshot) : undefined,
+        screenshot: screenshotUrl, // ✅ دائمًا Firebase Storage URL أو undefined
       });
+      console.log("[Checkout] ✅ Order created:", id, "| screenshotUrl:", screenshotUrl);
       setOrderId(id);
       clearCart();
       setStep("done");
       toast(t.checkout.success + " " + id);
-    } catch {
+    } catch (err) {
+      console.error("[Checkout] ❌ Order creation failed:", err);
       toast(lang === "en" ? "Failed to place order. Try again." : "فشل إرسال الطلب. حاول تاني.", "error");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -306,8 +334,10 @@ export function Checkout() {
               <span className="font-black text-2xl text-brand-green">{total} {t.egyptPound}</span>
             </div>
           </div>
-          <Button size="lg" className="w-full mt-6" onClick={() => { if (payment === "cod" && validateForm()) handlePlaceOrder(); else if (payment === "vodafone" && validateForm() && senderPhone) handlePlaceOrder(); else if (!validateForm()) toast(lang === "en" ? "Please fill all required fields" : "املأ كل الحقول المطلوبة", "error"); }}>
-            {t.checkout.place} <Check size={18} />
+          <Button size="lg" className="w-full mt-6" disabled={uploading} onClick={() => { if (payment === "cod" && validateForm()) handlePlaceOrder(); else if (payment === "vodafone" && validateForm() && senderPhone) handlePlaceOrder(); else if (!validateForm()) toast(lang === "en" ? "Please fill all required fields" : "املأ كل الحقول المطلوبة", "error"); }}>
+            {uploading
+              ? (lang === "en" ? "Uploading…" : "جاري الرفع…")
+              : <>{t.checkout.place} <Check size={18} /></>}
           </Button>
         </div>
       </div>
