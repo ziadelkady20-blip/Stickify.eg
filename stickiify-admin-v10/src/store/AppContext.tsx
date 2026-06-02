@@ -203,7 +203,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const t = translations[lang];
   const dir: "ltr" | "rtl" = lang === "ar" ? "rtl" : "ltr";
 
-  // ── Persist local prefs ───────────────────────────────────────────────────
   useEffect(() => {
     localStorage.setItem(LS.lang, JSON.stringify(lang));
     document.documentElement.lang = lang;
@@ -218,12 +217,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => localStorage.setItem(LS.cart, JSON.stringify(cart)), [cart]);
   useEffect(() => localStorage.setItem(LS.wish, JSON.stringify(wishlist)), [wishlist]);
 
-  // ── Firebase Auth listener ────────────────────────────────────────────────
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
       if (fbUser) {
         const role = fbUser.email === ADMIN_EMAIL ? "admin" : "user";
-        // Get profile from Firestore
         try {
           const snap = await getDocs(query(collection(db, "users")));
           const found = snap.docs.find((d) => d.id === fbUser.uid);
@@ -251,7 +248,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return unsub;
   }, []);
 
-  // ── Firestore real-time listeners ─────────────────────────────────────────
   useEffect(() => {
     const unsubOrders = onSnapshot(
       query(collection(db, "orders"), orderBy("createdAt", "desc")),
@@ -324,7 +320,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // ── Seed products/categories to Firestore once ────────────────────────────
   useEffect(() => {
     const seedFirestore = async () => {
       try {
@@ -354,22 +349,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setLang = (l: Lang) => setLangState(l);
   const toggleTheme = () => setTheme((th) => (th === "light" ? "dark" : "light"));
 
-  // ── Auth functions ────────────────────────────────────────────────────────
   const login = async (email: string, password: string) => {
     try {
       const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
-
-      // ✅ FIX: After Firebase auth succeeds, verify the user actually has a registered
-      // profile in Firestore. Without this check ANY email/password accepted by Firebase
-      // (e.g. admin account created directly in Firebase Console, or a leftover test account)
-      // would be allowed in with no Firestore record — and unregistered users could
-      // theoretically log in if their email was ever used in Firebase Auth.
       const isAdmin = email.trim().toLowerCase() === ADMIN_EMAIL;
       if (!isAdmin) {
         const snap = await getDocs(query(collection(db, "users")));
         const found = snap.docs.find((d) => d.id === cred.user.uid);
         if (!found) {
-          // User exists in Firebase Auth but NOT in our Firestore registry — sign them out
           await signOut(auth);
           return {
             ok: false,
@@ -377,12 +364,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           };
         }
       }
-
       return {
         ok: true,
-        message: isAdmin
-          ? "Welcome back, Admin 👑"
-          : lang === "ar" ? "أهلًا بيك! 👋" : "Logged in successfully",
+        message: isAdmin ? "Welcome back, Admin 👑" : lang === "ar" ? "أهلًا بيك! 👋" : "Logged in successfully",
       };
     } catch {
       return {
@@ -397,7 +381,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return { ok: false, message: lang === "ar" ? "املأ كل الحقول" : "Fill all fields" };
     try {
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-      // Save profile to Firestore
       await setDoc(doc(db, "users", cred.user.uid), {
         id: cred.user.uid,
         name,
@@ -417,14 +400,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => signOut(auth);
-
   const updateUser = (patch: Partial<NonNullable<User>>) =>
     setUser((u) => (u ? { ...u, ...patch } : u));
 
-  // ── Forgot / Reset password ───────────────────────────────────────────────
   const forgotPassword = async (emailOrPhone: string) => {
     const normalized = emailOrPhone.trim().toLowerCase();
-    // ابحث عن الإيميل لو دخل رقم موبايل
     const found = allUsers.find(
       (u) =>
         u.email.toLowerCase() === normalized ||
@@ -434,7 +414,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return { ok: false, message: lang === "ar" ? "مفيش حساب بالبيانات دي" : "No account found" };
     }
     try {
-      // Firebase بيبعت إيميل reset للعميل مباشرةً
       await sendPasswordResetEmail(auth, found.email);
       return {
         ok: true,
@@ -456,7 +435,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     if (entry.code !== code.trim()) return { ok: false, message: lang === "ar" ? "كود التحقق غلط" : "Invalid code" };
     if (newPassword.length < 6) return { ok: false, message: lang === "ar" ? "كلمة السر لازم 6 أحرف على الأقل" : "Min 6 characters" };
-    // Update in Firebase Auth
     if (auth.currentUser) {
       updatePassword(auth.currentUser, newPassword).catch(() => {});
     }
@@ -464,7 +442,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return { ok: true, message: lang === "ar" ? "تم تغيير كلمة السر ✅" : "Password changed ✅" };
   };
 
-  // ── Cart ──────────────────────────────────────────────────────────────────
   const addToCart = (productId: string, qty = 1) => {
     setCart((c) => {
       const found = c.find((i) => i.productId === productId);
@@ -482,80 +459,65 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setWishlist((w) => w.includes(productId) ? w.filter((id) => id !== productId) : [...w, productId]);
   };
 
-  // ── Products CRUD (Firestore) ─────────────────────────────────────────────
-  const addProduct = async (p: Product) => {
-    await setDoc(doc(db, "products", p.id), p);
-  };
-  const updateProduct = async (id: string, patch: Partial<Product>) => {
-    await updateDoc(doc(db, "products", id), patch as any);
-  };
-  const deleteProduct = async (id: string) => {
-    await deleteDoc(doc(db, "products", id));
-  };
+  const addProduct = async (p: Product) => { await setDoc(doc(db, "products", p.id), p); };
+  const updateProduct = async (id: string, patch: Partial<Product>) => { await updateDoc(doc(db, "products", id), patch as any); };
+  const deleteProduct = async (id: string) => { await deleteDoc(doc(db, "products", id)); };
 
-  // ── Categories CRUD (Firestore) ───────────────────────────────────────────
- const addCategory = async (c: Category) => {
-    await setDoc(doc(db, "categories", c.id), c);
-  };
+  const addCategory = async (c: Category) => { await setDoc(doc(db, "categories", c.id), c); };
+  const updateCategory = async (id: string, patch: Partial<Category>) => { await updateDoc(doc(db, "categories", id), patch as any); };
+  const deleteCategory = async (id: string) => { await deleteDoc(doc(db, "categories", id)); };
 
-  const updateCategory = async (id: string, patch: Partial<Category>) => {
-    await updateDoc(doc(db, "categories", id), patch as any);
-  };
-  const deleteCategory = async (id: string) => {
-    await deleteDoc(doc(db, "categories", id));
-  };
-
-  // ── Reviews CRUD ──────────────────────────────────────────────────────────
   const addReview = async (r: Review) => { await setDoc(doc(db, "reviews", r.id), r); };
   const updateReview = async (id: string, patch: Partial<Review>) => { await updateDoc(doc(db, "reviews", id), patch as any); };
   const deleteReview = async (id: string) => { await deleteDoc(doc(db, "reviews", id)); };
 
-  // ── Hero Image ────────────────────────────────────────────────────────────
   const setHeroImage = async (url: string) => {
     await setDoc(doc(db, "settings", "hero"), { image: url });
     setHeroImageState(url);
   };
-
   const setLogoImage = async (url: string) => {
     await setDoc(doc(db, "settings", "logo"), { image: url });
     setLogoImageState(url);
   };
-
   const setHeroContent = async (content: HeroContent) => {
     await setDoc(doc(db, "settings", "heroContent"), content as any);
     setHeroContentState(content);
   };
 
-  // ── Features CRUD (Firestore) ─────────────────────────────────────────────
-  const addFeature = async (f: Feature) => {
-    await setDoc(doc(db, "features", f.id), f);
-  };
-  const updateFeature = async (id: string, patch: Partial<Feature>) => {
-    await updateDoc(doc(db, "features", id), patch as any);
-  };
-  const deleteFeature = async (id: string) => {
-    await deleteDoc(doc(db, "features", id));
-  };
+  const addFeature = async (f: Feature) => { await setDoc(doc(db, "features", f.id), f); };
+  const updateFeature = async (id: string, patch: Partial<Feature>) => { await updateDoc(doc(db, "features", id), patch as any); };
+  const deleteFeature = async (id: string) => { await deleteDoc(doc(db, "features", id)); };
 
   // ── Upload Image to Firebase Storage ─────────────────────────────────────
   const uploadImage = async (file: File, folder: string): Promise<string> => {
-    console.log(`[uploadImage] Starting upload | folder: ${folder} | file: ${file.name} | size: ${(file.size / 1024).toFixed(1)}KB`);
+    console.log(`[uploadImage] Starting | folder: ${folder} | file: ${file.name}`);
+
+    const TIMEOUT_MS = 15000;
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Upload timed out")), TIMEOUT_MS)
+    );
+
     try {
       const timestamp = Date.now();
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const storageRef = ref(storage, `${folder}/${timestamp}_${safeName}`);
-      
-      console.log(`[uploadImage] Uploading to path: ${folder}/${timestamp}_${safeName}`);
-      const snapshot = await uploadBytes(storageRef, file);
-      console.log(`[uploadImage] ✅ Upload complete | bytes transferred: ${snapshot.metadata.size}`);
-      
-      const downloadURL = await getDownloadURL(storageRef);
-      console.log(`[uploadImage] ✅ Download URL obtained: ${downloadURL}`);
-      
+
+      const snapshot = await Promise.race([
+        uploadBytes(storageRef, file),
+        timeoutPromise,
+      ]);
+      console.log(`[uploadImage] ✅ Upload complete`);
+
+      const downloadURL = await Promise.race([
+        getDownloadURL(storageRef),
+        timeoutPromise,
+      ]);
+      console.log(`[uploadImage] ✅ URL: ${downloadURL}`);
+
       return downloadURL;
-    } catch (err) {
-      console.error(`[uploadImage] ❌ Upload failed | folder: ${folder} | file: ${file.name}`, err);
-      throw err; // إعادة الخطأ للـ caller يتعامل معه بشكل صحيح
+    } catch (err: any) {
+      console.error(`[uploadImage] ❌ Failed: ${err?.message}`);
+      throw err;
     }
   };
 
@@ -569,14 +531,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createdAt: now,
       history: [{ status: o.orderStatus, timestamp: now }],
     };
-    // Remove undefined fields — Firestore doesn't accept them
     const order = Object.fromEntries(
       Object.entries(raw).filter(([, v]) => v !== undefined)
     ) as Order;
-    
-    console.log(`[createOrder] Saving order ${id} to Firestore | paymentMethod: ${order.paymentMethod} | screenshot: ${order.screenshot || "none"}`);
     await setDoc(doc(db, "orders", id), order);
-    console.log(`[createOrder] ✅ Order ${id} saved successfully`);
     return id;
   };
 
@@ -598,19 +556,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await updateDoc(doc(db, "orders", id), info as any);
   };
 
-  // ── Custom Requests (Firestore) ───────────────────────────────────────────
   const createRequest = async (r: Omit<CustomRequest, "id" | "createdAt">) => {
     const id = "REQ-" + Date.now();
-    console.log(`[createRequest] Saving request ${id} to Firestore | image: ${r.image || "none"}`);
     await setDoc(doc(db, "requests", id), { ...r, id, createdAt: new Date().toISOString() });
-    console.log(`[createRequest] ✅ Request ${id} saved successfully`);
   };
 
   const updateRequestStatus = async (id: string, status: CustomRequest["status"]) => {
     await updateDoc(doc(db, "requests", id), { status });
   };
 
-  // ── Toasts ────────────────────────────────────────────────────────────────
   const toast = (message: string, type: Toast["type"] = "success") => {
     const id = Math.random().toString(36).slice(2, 10);
     setToasts((ts) => [...ts, { id, message, type }]);
