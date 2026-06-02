@@ -186,12 +186,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(null);
   const [cart, setCart] = useState<CartItem[]>(() => loadJSON(LS.cart, []));
   const [wishlist, setWishlist] = useState<string[]>(() => loadJSON(LS.wish, []));
-  const [products, setProducts] = useState<Product[]>(seedProducts);
-  const [categories, setCategories] = useState<Category[]>(seedCategories);
+ const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [customRequests, setRequests] = useState<CustomRequest[]>([]);
   const [allUsers, setAllUsers] = useState<RegisteredUser[]>([]);
-  const [reviews, setReviews] = useState<Review[]>(seedReviews);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [heroImage, setHeroImageState] = useState<string>("/hero.jpg");
   const [logoImage, setLogoImageState] = useState<string>("/logo.png");
   const [heroContent, setHeroContentState] = useState<HeroContent>(DEFAULT_HERO);
@@ -263,17 +263,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       collection(db, "products"),
       (snap) => {
         const docs = snap.docs.map((d) => ({ ...d.data(), id: d.id } as Product));
-        setProducts(docs.length > 0 ? docs : seedProducts);
+        setProducts(docs);
       },
-      () => setProducts(seedProducts)
+      () => setProducts([])
     );
     const unsubCategories = onSnapshot(
       collection(db, "categories"),
       (snap) => {
         const docs = snap.docs.map((d) => ({ ...d.data(), id: d.id } as Category));
-        setCategories(docs.length > 0 ? docs : seedCategories);
+        setCategories(docs);
       },
-      () => setCategories(seedCategories)
+      () => setCategories([])
     );
     const unsubUsers = onSnapshot(
       collection(db, "users"),
@@ -284,9 +284,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       collection(db, "reviews"),
       (snap) => {
         const docs = snap.docs.map((d) => ({ ...d.data(), id: d.id } as Review));
-        setReviews(docs.length > 0 ? docs : seedReviews);
+        setReviews(docs);
       },
-      () => setReviews(seedReviews)
+      () => setReviews([])
     );
     const unsubHero = onSnapshot(
       collection(db, "settings"),
@@ -321,28 +321,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const seedFirestore = async () => {
-      try {
-        const prodSnap = await getDocs(collection(db, "products"));
-        if (prodSnap.empty) {
-          for (const p of seedProducts) {
-            await setDoc(doc(db, "products", p.id), p);
-          }
-        }
-        const catSnap = await getDocs(collection(db, "categories"));
-        if (catSnap.empty) {
-          for (const c of seedCategories) {
-            await setDoc(doc(db, "categories", c.id), c);
-          }
-        }
-        const revSnap = await getDocs(collection(db, "reviews"));
-        if (revSnap.empty) {
-          for (const r of seedReviews) {
-            await setDoc(doc(db, "reviews", r.id), r);
-          }
-        }
-      } catch {}
-    };
+    
     seedFirestore();
   }, []);
 
