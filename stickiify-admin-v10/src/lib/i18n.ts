@@ -195,7 +195,7 @@ export const translations = {
     bestSellers: { title: "الأكثر مبيعاً", subtitle: "الأكثر طلباً" },
     reviews: { title: "آراء عملائنا", subtitle: "كلام حقيقي من ناس حقيقية" },
     faq: { title: "الأسئلة الشائعة", subtitle: "إجابات سريعة" },
-    insta: { title: "تابعنا على جميع مواقع التواصل الاجتماعي", handle: "@stickiify.eg" },
+    insta: { title: "تابعنا على منصاتنا", handle: "@stickiify.eg" },
     addCart: "أضف للسلة",
     addToWishlist: "أضف للمفضلة",
     inWishlist: "في المفضلة",
