@@ -98,9 +98,9 @@ export default function Cart() {
               {t.cart.checkout} <ArrowRight size={18} />
             </Button>
           </Link>
-          {subtotal < 300 && (
+          {subtotal < 200 && (
             <p className="text-xs text-center mt-3 text-brand-black/60 dark:text-brand-white/60">
-              {lang === "en" ? `Add ${200 - subtotal} ${t.egyptPound} more for free shipping!` : `أضف ${300 - subtotal} ${t.egyptPound} تاني عشان الشحن مجاناً!`}
+              {lang === "en" ? `Add ${200 - subtotal} ${t.egyptPound} more for free shipping!` : `أضف ${200 - subtotal} ${t.egyptPound} تاني عشان الشحن مجاناً!`}
             </p>
           )}
         </div>
