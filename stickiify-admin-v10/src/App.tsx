@@ -21,13 +21,32 @@ function ScrollToTop() {
   return null;
 }
 
-function ProtectedRoute({ children, admin = false }: { children: React.ReactNode; admin?: boolean }) {
+function ProtectedRoute({
+  children,
+  admin = false,
+}: {
+  children: React.ReactNode;
+  admin?: boolean;
+}) {
   const { user } = useApp();
-  if (!user) return <Navigate to="/login" replace />;
-  if (admin && user.role !== "admin") return <Navigate to="/dashboard" replace />;
+  const location = useLocation();
+
+  if (!user) {
+    return (
+      <Navigate
+        to="/login"
+        state={{ from: location }}
+        replace
+      />
+    );
+  }
+
+  if (admin && user.role !== "admin") {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return <>{children}</>;
 }
-
 function WishlistPage() {
   const { t, lang, wishlist, toggleWishlist, addToCart, toast } = useApp();
   const { products } = useApp();
@@ -116,7 +135,14 @@ function AppShell() {
           <Route path="/shop" element={<Shop />} />
           <Route path="/product/:slug" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
+          <Route
+  path="/checkout"
+  element={
+    <ProtectedRoute>
+      <Checkout />
+    </ProtectedRoute>
+  }
+/>
           <Route path="/custom" element={<CustomDesign />} />
           <Route path="/track" element={<OrderTracking />} />
           <Route path="/wishlist" element={<WishlistPage />} />
