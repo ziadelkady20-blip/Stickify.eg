@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, Phone, Eye, EyeOff, KeyRound, ArrowLeft } from "lucide-react";
 import { useApp } from "../store/AppContext";
@@ -11,11 +11,17 @@ type ForgotStep = "idle" | "enterContact" | "enterCode" | "done";
 export default function Auth({ mode }: { mode: Mode }) {
   const { t, lang, login, register, forgotPassword, resetPassword, toast, user } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
+
+const from =
+  (location.state as any)?.from?.pathname || "/dashboard";
 
   // Redirect when Firebase confirms the user is logged in
   useEffect(() => {
-    if (user) navigate("/dashboard", { replace: true });
-  }, [user, navigate]);
+  if (user) {
+    navigate(from, { replace: true });
+  }
+}, [user, navigate, from]);
   const [showPw, setShowPw] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
 
