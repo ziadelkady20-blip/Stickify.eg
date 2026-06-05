@@ -15,7 +15,7 @@ export default function Cart() {
   }).filter((i) => i.product);
 
   const subtotal = items.reduce((s, i) => s + (i.product!.price * i.quantity), 0);
-  const shipping = subtotal > 300 ? 0 : 25;
+  const shipping = subtotal > 200 ? 0 : 25;
   const total = subtotal + shipping;
 
   if (items.length === 0) {
@@ -100,7 +100,7 @@ export default function Cart() {
           </Link>
           {subtotal < 300 && (
             <p className="text-xs text-center mt-3 text-brand-black/60 dark:text-brand-white/60">
-              {lang === "en" ? `Add ${300 - subtotal} ${t.egyptPound} more for free shipping!` : `أضف ${300 - subtotal} ${t.egyptPound} تاني عشان الشحن مجاناً!`}
+              {lang === "en" ? `Add ${200 - subtotal} ${t.egyptPound} more for free shipping!` : `أضف ${300 - subtotal} ${t.egyptPound} تاني عشان الشحن مجاناً!`}
             </p>
           )}
         </div>
@@ -127,7 +127,7 @@ export function Checkout() {
   }).filter((i) => i.product);
 
   const subtotal = items.reduce((s, i) => s + (i.product!.price * i.quantity), 0);
-  const shipping = subtotal > 300 ? 0 : 25;
+  const shipping = subtotal > 200 ? 0 : 25;
   const total = subtotal + shipping;
 
   if (items.length === 0 && step !== "done") {
