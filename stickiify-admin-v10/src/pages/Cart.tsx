@@ -15,7 +15,7 @@ export default function Cart() {
   }).filter((i) => i.product);
 
   const subtotal = items.reduce((s, i) => s + (i.product!.price * i.quantity), 0);
-  const shipping = subtotal > 300 ? 0 : 30;
+  const shipping = subtotal > 300 ? 0 : 25;
   const total = subtotal + shipping;
 
   if (items.length === 0) {
@@ -127,7 +127,7 @@ export function Checkout() {
   }).filter((i) => i.product);
 
   const subtotal = items.reduce((s, i) => s + (i.product!.price * i.quantity), 0);
-  const shipping = subtotal > 300 ? 0 : 30;
+  const shipping = subtotal > 300 ? 0 : 25;
   const total = subtotal + shipping;
 
   if (items.length === 0 && step !== "done") {
