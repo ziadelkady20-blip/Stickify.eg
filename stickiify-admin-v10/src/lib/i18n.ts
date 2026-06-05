@@ -25,7 +25,7 @@ export const translations = {
         "Egypt's #1 shop for custom stickers, laptop skins, mugs & more. Premium quality, bold designs, delivered nationwide.",
       cta: "Shop Now",
       cta2: "Design Yours",
-      badge: "Free shipping above 300 EGP",
+      badge: "Free shipping above 200 EGP",
     },
     categories: { title: "Shop by Category", subtitle: "Pick your vibe" },
     featured: { title: "Featured Drops", subtitle: "Fresh picks this week" },
