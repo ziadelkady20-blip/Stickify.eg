@@ -192,7 +192,7 @@ function Analytics() {
  *  ORDERS MANAGEMENT
  * ========================================================== */
 function OrdersTab() {
-  const { t, orders, updateOrderStatus, updateShippingInfo } = useApp();
+  const { t, orders, products, updateOrderStatus, updateShippingInfo } = useApp();
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [editingShipping, setEditingShipping] = useState<string | null>(null);
@@ -298,7 +298,36 @@ function OrdersTab() {
               <span>📅 {new Date(o.createdAt).toLocaleDateString()}</span>
               {o.notes && <span>📝 {o.notes}</span>}
             </div>
+<div className="mt-3 border-t border-brand-green/20 pt-3">
+  <p className="font-bold text-sm mb-2">
+    المنتجات المطلوبة:
+  </p>
 
+  {o.products?.map((item, index) => {
+    const product = products.find(
+      (p) => p.id === item.productId
+    );
+
+    return (
+      <div
+        key={index}
+        className="flex justify-between text-sm py-1"
+      >
+        <span>
+          {product?.nameAr || product?.name || item.productId}
+        </span>
+
+        <span>
+          الكمية: {item.quantity}
+        </span>
+
+        <span>
+          {item.price} جنيه
+        </span>
+      </div>
+    );
+  })}
+</div>
             {/* Shipping info summary */}
             {(o.shippingCompany || o.trackingNumber) && (
               <div className="mt-2 text-xs text-brand-black/60 dark:text-brand-white/60 flex flex-wrap gap-3">
