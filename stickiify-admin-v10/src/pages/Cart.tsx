@@ -279,21 +279,8 @@ export function Checkout() {
   const discountAmount = appliedPromo
     ? Math.round((subtotal * appliedPromo.discount) / 100)
     : 0;
- const subtotal = items.reduce((s, i) => s + i.product!.price * i.quantity, 0);
-
-const discountAmount = appliedPromo
-  ? Math.round((subtotal * appliedPromo.discount) / 100)
-  : 0;
-
-const finalSubtotal = subtotal - discountAmount;
-
-// شحن مجاني لو المبلغ بعد الخصم 200 أو أكثر
-const shippingPrice =
-  finalSubtotal >= 200
-    ? 0
-    : getShippingPrice(form.governorate);
-
-const total = finalSubtotal + shippingPrice;
+  const shippingPrice = getShippingPrice(form.governorate);
+  const total = subtotal - discountAmount + shippingPrice;
 
   if (items.length === 0 && step !== "done") {
     return (
