@@ -308,26 +308,34 @@ function OrdersTab() {
       (p) => p.id === item.productId
     );
 
-    return (
-      <div
-        key={index}
-        className="flex justify-between text-sm py-1"
-      >
-        <span>
+   return (
+  <div
+    key={index}
+    className="flex items-center justify-between gap-4 py-2 border-b border-brand-green/10"
+  >
+    <div className="flex items-center gap-3">
+      <img
+        src={product?.images?.[0]}
+        alt={product?.name}
+        className="w-14 h-14 rounded-lg object-cover border"
+      />
+
+      <div>
+        <p className="font-semibold">
           {product?.nameAr || product?.name || item.productId}
-        </span>
+        </p>
 
-        <span>
+        <p className="text-xs opacity-70">
           الكمية: {item.quantity}
-        </span>
-
-        <span>
-          {item.price} جنيه
-        </span>
+        </p>
       </div>
-    );
-  })}
-</div>
+    </div>
+
+    <span className="font-bold">
+      {item.price} جنيه
+    </span>
+  </div>
+);
             {/* Shipping info summary */}
             {(o.shippingCompany || o.trackingNumber) && (
               <div className="mt-2 text-xs text-brand-black/60 dark:text-brand-white/60 flex flex-wrap gap-3">
