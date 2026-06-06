@@ -279,9 +279,15 @@ export function Checkout() {
   const discountAmount = appliedPromo
     ? Math.round((subtotal * appliedPromo.discount) / 100)
     : 0;
-  const shippingPrice = getShippingPrice(form.governorate);
-  const total = subtotal - discountAmount + shippingPrice;
+  const afterDiscount = subtotal - discountAmount;
 
+// شحن مجاني لو بعد الخصم وصل 200 أو أكتر
+const shippingPrice =
+  afterDiscount >= 200
+    ? 0
+    : getShippingPrice(form.governorate);
+
+const total = afterDiscount + shippingPrice;
   if (items.length === 0 && step !== "done") {
     return (
       <div className="max-w-3xl mx-auto px-4 py-20">
