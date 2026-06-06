@@ -50,6 +50,26 @@ export type Review = {
   avatar: string;
 };
 
+// ── Promo Codes ────────────────────────────────────────────────────────────────
+export type PromoCode = {
+  id: string;
+  code: string;          // e.g. "SAVE20"
+  discount: number;      // percentage, e.g. 20 = 20%
+  active: boolean;
+  expiryDate: string;    // ISO date string, e.g. "2026-12-31"
+  maxUses: number;       // 0 = unlimited
+  usedCount: number;
+  createdAt: string;
+};
+
+// ── Shipping Rates ─────────────────────────────────────────────────────────────
+export type ShippingRate = {
+  id: string;
+  governorate: string;   // matches values in the governorates list
+  price: number;         // in EGP
+  active: boolean;
+};
+
 export type OrderStatus =
   | "underReview"
   | "pendingPaymentVerification"
@@ -87,6 +107,12 @@ export type Order = {
   shippingNotes?: string;
   shippedAt?: string;
   estimatedDelivery?: string;
+  // Shipping cost — snapshotted at order creation so future rate changes don't affect history
+  shippingPrice?: number;
+  // Promo code fields — snapshotted at order creation
+  promoCode?: string;
+  discountPercentage?: number;
+  discountAmount?: number;
 };
 
 // Registered users store (used for login validation)
