@@ -254,7 +254,7 @@ export function Checkout() {
     name: user?.name || "",
     phone: user?.phone || "",
     address: "",
-    governorate: "Cairo",
+    governorate: "Fayoum",
     notes: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
