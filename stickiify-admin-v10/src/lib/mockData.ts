@@ -563,7 +563,7 @@ export const sampleRequests: CustomRequest[] = [
 ];
 
 export const governorates = [
-  "Fayoum',
+  "Fayoum",
   "FAYOUM AREA",
   "Cairo",
   "Alexandria",
