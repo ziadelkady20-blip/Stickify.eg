@@ -15,6 +15,7 @@ import {
   onSnapshot,
   query,
   orderBy,
+  increment,
 } from "firebase/firestore";
 import {
   createUserWithEmailAndPassword,
@@ -38,6 +39,8 @@ import {
   type Order,
   type CustomRequest,
   type RegisteredUser,
+  type PromoCode,
+  type ShippingRate,
 } from "../lib/mockData";
 
 export type Feature = {
@@ -138,6 +141,25 @@ type AppState = {
   updateReview: (id: string, patch: Partial<Review>) => void;
   deleteReview: (id: string) => void;
 
+  // ── Promo Codes ───────────────────────────────────────────────────────────
+  promoCodes: PromoCode[];
+  addPromoCode: (p: PromoCode) => Promise<void>;
+  updatePromoCode: (id: string, patch: Partial<PromoCode>) => Promise<void>;
+  deletePromoCode: (id: string) => Promise<void>;
+  /** Validates a promo code string against business rules.
+   *  Returns { ok, discount, message } — does NOT increment usedCount yet. */
+  validatePromoCode: (code: string, subtotal: number) => Promise<{ ok: boolean; discount: number; promoId: string; message: string }>;
+  /** Atomically increments usedCount after a successful order. */
+  incrementPromoUsage: (promoId: string) => Promise<void>;
+
+  // ── Shipping Rates ────────────────────────────────────────────────────────
+  shippingRates: ShippingRate[];
+  addShippingRate: (r: ShippingRate) => Promise<void>;
+  updateShippingRate: (id: string, patch: Partial<ShippingRate>) => Promise<void>;
+  deleteShippingRate: (id: string) => Promise<void>;
+  /** Returns the shipping price for a governorate. Falls back to 0 if not found or inactive. */
+  getShippingPrice: (governorate: string) => number;
+
   heroImage: string;
   setHeroImage: (url: string) => void;
   logoImage: string;
@@ -192,6 +214,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [customRequests, setRequests] = useState<CustomRequest[]>([]);
   const [allUsers, setAllUsers] = useState<RegisteredUser[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+  const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
   const [heroImage, setHeroImageState] = useState<string>("/hero.jpg");
   const [logoImage, setLogoImageState] = useState<string>("/logo.png");
   const [heroContent, setHeroContentState] = useState<HeroContent>(DEFAULT_HERO);
@@ -308,6 +332,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       () => setFeatures(DEFAULT_FEATURES)
     );
+
+    // ── Promo Codes ──────────────────────────────────────────────────────────
+    const unsubPromoCodes = onSnapshot(
+      query(collection(db, "promoCodes"), orderBy("createdAt", "desc")),
+      (snap) => setPromoCodes(snap.docs.map((d) => ({ ...d.data(), id: d.id } as PromoCode))),
+      () => setPromoCodes([])
+    );
+
+    // ── Shipping Rates ───────────────────────────────────────────────────────
+    const unsubShippingRates = onSnapshot(
+      collection(db, "shippingRates"),
+      (snap) => setShippingRates(snap.docs.map((d) => ({ ...d.data(), id: d.id } as ShippingRate))),
+      () => setShippingRates([])
+    );
+
     return () => {
       unsubOrders();
       unsubReqs();
@@ -317,6 +356,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       unsubReviews();
       unsubHero();
       unsubFeatures();
+      unsubPromoCodes();
+      unsubShippingRates();
     };
   }, []);
 
@@ -467,6 +508,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateFeature = async (id: string, patch: Partial<Feature>) => { await updateDoc(doc(db, "features", id), patch as any); };
   const deleteFeature = async (id: string) => { await deleteDoc(doc(db, "features", id)); };
 
+  // ── Promo Codes (Firestore) ───────────────────────────────────────────────
+  const addPromoCode = async (p: PromoCode) => { await setDoc(doc(db, "promoCodes", p.id), p); };
+  const updatePromoCode = async (id: string, patch: Partial<PromoCode>) => { await updateDoc(doc(db, "promoCodes", id), patch as any); };
+  const deletePromoCode = async (id: string) => { await deleteDoc(doc(db, "promoCodes", id)); };
+
+  /** Validates a promo code without consuming it. Returns discount % on success. */
+  const validatePromoCode = async (code: string, _subtotal: number): Promise<{ ok: boolean; discount: number; promoId: string; message: string }> => {
+    const normalized = code.trim().toUpperCase();
+    const promo = promoCodes.find((p) => p.code.toUpperCase() === normalized);
+    if (!promo) return { ok: false, discount: 0, promoId: "", message: lang === "ar" ? "كود الخصم غير صحيح" : "Invalid promo code" };
+    if (!promo.active) return { ok: false, discount: 0, promoId: "", message: lang === "ar" ? "كود الخصم غير مفعّل" : "Promo code is not active" };
+    const now = new Date();
+    const expiry = new Date(promo.expiryDate);
+    if (expiry < now) return { ok: false, discount: 0, promoId: "", message: lang === "ar" ? "كود الخصم انتهت صلاحيته" : "Promo code has expired" };
+    if (promo.maxUses > 0 && promo.usedCount >= promo.maxUses) return { ok: false, discount: 0, promoId: "", message: lang === "ar" ? "كود الخصم وصل للحد الأقصى" : "Promo code usage limit reached" };
+    return { ok: true, discount: promo.discount, promoId: promo.id, message: lang === "ar" ? `تم تطبيق خصم ${promo.discount}%! ✅` : `${promo.discount}% discount applied! ✅` };
+  };
+
+  /** Atomically increments usedCount — call AFTER a successful order creation. */
+  const incrementPromoUsage = async (promoId: string) => {
+    if (!promoId) return;
+    await updateDoc(doc(db, "promoCodes", promoId), { usedCount: increment(1) });
+  };
+
+  // ── Shipping Rates (Firestore) ────────────────────────────────────────────
+  const addShippingRate = async (r: ShippingRate) => { await setDoc(doc(db, "shippingRates", r.id), r); };
+  const updateShippingRate = async (id: string, patch: Partial<ShippingRate>) => { await updateDoc(doc(db, "shippingRates", id), patch as any); };
+  const deleteShippingRate = async (id: string) => { await deleteDoc(doc(db, "shippingRates", id)); };
+
+  /** Returns the active shipping price for a given governorate, or 0 if not configured. */
+  const getShippingPrice = (governorate: string): number => {
+    const rate = shippingRates.find(
+      (r) => r.active && r.governorate.toLowerCase() === governorate.toLowerCase()
+    );
+    return rate ? rate.price : 0;
+  };
+
   // ── Upload Image to Cloudinary ─────────────────────────────────────
 const uploadImage = async (file: File, folder: string): Promise<string> => {
   console.log(`[uploadImage] Starting Cloudinary upload`);
@@ -564,6 +642,8 @@ const uploadImage = async (file: File, folder: string): Promise<string> => {
         createOrder, createRequest,
         updateOrderStatus, updatePaymentStatus, updateRequestStatus, updateShippingInfo,
         reviews, addReview, updateReview, deleteReview,
+        promoCodes, addPromoCode, updatePromoCode, deletePromoCode, validatePromoCode, incrementPromoUsage,
+        shippingRates, addShippingRate, updateShippingRate, deleteShippingRate, getShippingPrice,
         heroImage, setHeroImage,
         logoImage, setLogoImage,
         heroContent, setHeroContent,
