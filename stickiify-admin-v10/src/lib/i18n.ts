@@ -51,6 +51,11 @@ export const translations = {
       checkout: "Checkout",
       clear: "Clear cart",
       free: "Free",
+      promoPlaceholder: "Promo code",
+      promoApply: "Apply",
+      promoRemove: "Remove",
+      promoSuccess: "Promo code applied!",
+      discount: "Discount",
     },
     checkout: {
       title: "Checkout",
@@ -140,6 +145,8 @@ export const translations = {
       reject: "Reject",
       addProduct: "Add Product",
       addCategory: "Add Category",
+      promoCodes: "Promo Codes",
+      shipping: "Shipping Settings",
     },
     footer: {
       tagline: "Stickers that speak louder than words.",
@@ -214,6 +221,11 @@ export const translations = {
       checkout: "إتمام الطلب",
       clear: "إفراغ السلة",
       free: "مجاني",
+      promoPlaceholder: "كود الخصم",
+      promoApply: "تطبيق",
+      promoRemove: "إزالة",
+      promoSuccess: "تم تطبيق كود الخصم!",
+      discount: "الخصم",
     },
     checkout: {
       title: "إتمام الطلب",
@@ -303,6 +315,8 @@ export const translations = {
       reject: "رفض",
       addProduct: "إضافة منتج",
       addCategory: "إضافة فئة",
+      promoCodes: "أكواد الخصم",
+      shipping: "إعدادات الشحن",
     },
     footer: {
       tagline: "ستيكرز بتتكلم أعلى من الكلمات.",
