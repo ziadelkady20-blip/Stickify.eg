@@ -304,39 +304,40 @@ function OrdersTab() {
   </p>
 
   {o.products?.map((item, index) => {
-  const product = products.find(
-    (p) => p.id === item.productId
-  );
+    const product = products.find(
+      (p) => p.id === item.productId
+    );
 
-  return (
-    <div
-      key={index}
-      className="flex items-center justify-between gap-4 py-2 border-b border-brand-green/10"
-    >
-      <div className="flex items-center gap-3">
-        <img
-          src={product?.images?.[0] || "/logo.png"}
-          alt={product?.name || "Product"}
-          className="w-14 h-14 rounded-lg object-cover border border-brand-green/20"
-        />
+    return (
+      <div
+        key={index}
+        className="flex items-center justify-between gap-4 py-2 border-b border-brand-green/10"
+      >
+        <div className="flex items-center gap-3">
+          <img
+            src={product?.images?.[0] || "/logo.png"}
+            alt={product?.name || "Product"}
+            className="w-14 h-14 rounded-lg object-cover border border-brand-green/20"
+          />
 
-        <div>
-          <p className="font-semibold text-sm">
-            {product?.nameAr || product?.name || item.productId}
-          </p>
+          <div>
+            <p className="font-semibold text-sm">
+              {product?.nameAr || product?.name || item.productId}
+            </p>
 
-          <p className="text-xs opacity-70">
-            الكمية: {item.quantity}
-          </p>
+            <p className="text-xs opacity-70">
+              الكمية: {item.quantity}
+            </p>
+          </div>
         </div>
-      </div>
 
-      <span className="font-bold text-sm">
-        {item.price} جنيه
-      </span>
-    </div>
-  );
-})}
+        <span className="font-bold text-sm">
+          {item.price} جنيه
+        </span>
+      </div>
+    );
+  })}
+</div>
             {/* Shipping info summary */}
             {(o.shippingCompany || o.trackingNumber) && (
               <div className="mt-2 text-xs text-brand-black/60 dark:text-brand-white/60 flex flex-wrap gap-3">
