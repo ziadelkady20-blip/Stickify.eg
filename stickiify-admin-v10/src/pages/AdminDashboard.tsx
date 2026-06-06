@@ -9,11 +9,11 @@ import {
 } from "lucide-react";
 import { useApp } from "../store/AppContext";
 import type { Feature } from "../store/AppContext";
-import type { Product, Category, Review, ProductVariant, ProductStatus } from "../lib/mockData";
+import type { Product, Category, Review, ProductVariant, ProductStatus, PromoCode, ShippingRate } from "../lib/mockData";
 import { Button, StatusBadge, Badge } from "../components/ui";
 import { ConfirmModal } from "../components/ConfirmModal";
 
-type Tab = "analytics" | "products" | "categories" | "orders" | "payments" | "requests" | "users" | "siteContent";
+type Tab = "analytics" | "products" | "categories" | "orders" | "payments" | "requests" | "users" | "siteContent" | "promoCodes" | "shipping";
 
 /* ==========================================================
  *  ADMIN DASHBOARD — top-level container
@@ -49,6 +49,8 @@ export default function AdminDashboard() {
     { key: "requests", label: t.admin.requests, icon: Eye, badge: pendingRequests },
     { key: "users", label: "العملاء", icon: UserCheck },
     { key: "siteContent", label: "محتوى الموقع", icon: ImageIcon },
+    { key: "promoCodes", label: t.admin.promoCodes, icon: Tag },
+    { key: "shipping", label: t.admin.shipping, icon: Package },
   ];
 
   return (
@@ -97,6 +99,8 @@ export default function AdminDashboard() {
           {tab === "requests" && <RequestsTab />}
           {tab === "users" && <UsersTab />}
           {tab === "siteContent" && <SiteContentTab />}
+          {tab === "promoCodes" && <PromoCodesTab />}
+          {tab === "shipping" && <ShippingTab />}
         </div>
       </div>
     </div>
@@ -2232,6 +2236,566 @@ function UsersTab() {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ==========================================================
+ *  PROMO CODES TAB
+ * ========================================================== */
+function PromoCodesTab() {
+  const { promoCodes, addPromoCode, updatePromoCode, deletePromoCode, toast } = useApp();
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  const EMPTY_FORM = {
+    code: "",
+    discount: 10,
+    active: true,
+    expiryDate: "",
+    maxUses: 0,
+  };
+  const [form, setForm] = useState(EMPTY_FORM);
+
+  const openCreate = () => {
+    setForm(EMPTY_FORM);
+    setEditingId(null);
+    setShowForm(true);
+  };
+
+  const openEdit = (p: PromoCode) => {
+    setForm({
+      code: p.code,
+      discount: p.discount,
+      active: p.active,
+      expiryDate: p.expiryDate,
+      maxUses: p.maxUses,
+    });
+    setEditingId(p.id);
+    setShowForm(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.code.trim()) { toast("أدخل كود الخصم", "error"); return; }
+    if (form.discount < 1 || form.discount > 100) { toast("الخصم لازم يكون بين 1 و 100%", "error"); return; }
+    if (!form.expiryDate) { toast("أدخل تاريخ انتهاء الصلاحية", "error"); return; }
+
+    try {
+      if (editingId) {
+        await updatePromoCode(editingId, {
+          code: form.code.trim().toUpperCase(),
+          discount: form.discount,
+          active: form.active,
+          expiryDate: form.expiryDate,
+          maxUses: form.maxUses,
+        });
+        toast("تم تحديث الكود ✅");
+      } else {
+        // Check for duplicate code
+        const duplicate = promoCodes.find(
+          (p) => p.code.toUpperCase() === form.code.trim().toUpperCase()
+        );
+        if (duplicate) { toast("الكود ده موجود بالفعل", "error"); return; }
+
+        const id = "PROMO-" + Date.now();
+        await addPromoCode({
+          id,
+          code: form.code.trim().toUpperCase(),
+          discount: form.discount,
+          active: form.active,
+          expiryDate: form.expiryDate,
+          maxUses: form.maxUses,
+          usedCount: 0,
+          createdAt: new Date().toISOString(),
+        });
+        toast("تم إضافة الكود ✅");
+      }
+      setShowForm(false);
+      setEditingId(null);
+    } catch {
+      toast("حصل خطأ، حاول تاني", "error");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deletePromoCode(id);
+      toast("تم حذف الكود");
+    } catch {
+      toast("فشل الحذف", "error");
+    }
+    setConfirmDelete(null);
+  };
+
+  const handleToggleActive = async (p: PromoCode) => {
+    try {
+      await updatePromoCode(p.id, { active: !p.active });
+      toast(p.active ? "تم إيقاف الكود" : "تم تفعيل الكود");
+    } catch {
+      toast("حصل خطأ", "error");
+    }
+  };
+
+  const isExpired = (expiryDate: string) => new Date(expiryDate) < new Date();
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="glass rounded-3xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-black text-2xl text-brand-black dark:text-brand-white flex items-center gap-2">
+            🎟️ أكواد الخصم ({promoCodes.length})
+          </h2>
+          <Button onClick={openCreate} size="sm">
+            <Plus size={16} /> إضافة كود
+          </Button>
+        </div>
+
+        {/* Create / Edit form */}
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-brand-lime/10 border border-brand-lime/30 rounded-2xl p-5 mb-6 space-y-4"
+          >
+            <h3 className="font-black text-lg text-brand-black dark:text-brand-white">
+              {editingId ? "✏️ تعديل الكود" : "➕ كود جديد"}
+            </h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-brand-black/80 dark:text-brand-white/80">
+                  الكود (بالإنجليزي)
+                </label>
+                <input
+                  value={form.code}
+                  onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                  placeholder="SAVE20"
+                  className="w-full rounded-xl border border-brand-green/20 bg-white/70 dark:bg-brand-black/40 px-4 py-2.5 text-brand-black dark:text-brand-white outline-none focus:border-brand-lime"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-brand-black/80 dark:text-brand-white/80">
+                  نسبة الخصم (%)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={form.discount}
+                  onChange={(e) => setForm({ ...form, discount: Number(e.target.value) })}
+                  className="w-full rounded-xl border border-brand-green/20 bg-white/70 dark:bg-brand-black/40 px-4 py-2.5 text-brand-black dark:text-brand-white outline-none focus:border-brand-lime"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-brand-black/80 dark:text-brand-white/80">
+                  تاريخ انتهاء الصلاحية
+                </label>
+                <input
+                  type="date"
+                  value={form.expiryDate}
+                  onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
+                  className="w-full rounded-xl border border-brand-green/20 bg-white/70 dark:bg-brand-black/40 px-4 py-2.5 text-brand-black dark:text-brand-white outline-none focus:border-brand-lime"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-brand-black/80 dark:text-brand-white/80">
+                  الحد الأقصى للاستخدام (0 = غير محدود)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={form.maxUses}
+                  onChange={(e) => setForm({ ...form, maxUses: Number(e.target.value) })}
+                  className="w-full rounded-xl border border-brand-green/20 bg-white/70 dark:bg-brand-black/40 px-4 py-2.5 text-brand-black dark:text-brand-white outline-none focus:border-brand-lime"
+                />
+              </div>
+              <div className="flex items-center gap-3 md:col-span-2">
+                <label className="text-sm font-medium text-brand-black/80 dark:text-brand-white/80">
+                  مفعّل؟
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, active: !form.active })}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${form.active ? "bg-brand-lime" : "bg-gray-300"}`}
+                >
+                  <span
+                    className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.active ? "translate-x-7" : "translate-x-1"}`}
+                  />
+                </button>
+                <span className="text-sm text-brand-black/60 dark:text-brand-white/60">
+                  {form.active ? "مفعّل" : "معطّل"}
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button onClick={handleSave} size="sm">
+                <Save size={15} /> حفظ
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setShowForm(false); setEditingId(null); }}
+              >
+                <X size={15} /> إلغاء
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Promo codes list */}
+        {promoCodes.length === 0 ? (
+          <p className="text-center text-brand-black/50 dark:text-brand-white/50 py-10">
+            مفيش أكواد خصم لسه — ابدأ بإضافة أول كود
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {promoCodes.map((p) => {
+              const expired = isExpired(p.expiryDate);
+              const usagePct = p.maxUses > 0 ? Math.round((p.usedCount / p.maxUses) * 100) : null;
+              return (
+                <div
+                  key={p.id}
+                  className={`rounded-2xl p-4 border transition ${
+                    !p.active || expired
+                      ? "bg-gray-50 dark:bg-brand-black/20 border-gray-200 dark:border-brand-black/30 opacity-60"
+                      : "bg-white/50 dark:bg-brand-black/30 border-brand-green/10"
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    {/* Left: code info */}
+                    <div className="flex items-center gap-4">
+                      <div className="bg-brand-lime/20 rounded-xl px-4 py-2">
+                        <span className="font-black text-brand-green text-lg tracking-widest">
+                          {p.code}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-brand-black dark:text-brand-white text-sm">
+                            خصم {p.discount}%
+                          </span>
+                          {expired && (
+                            <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">
+                              منتهي
+                            </span>
+                          )}
+                          {!p.active && !expired && (
+                            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-bold">
+                              معطّل
+                            </span>
+                          )}
+                          {p.active && !expired && (
+                            <span className="text-xs bg-brand-lime text-brand-black px-2 py-0.5 rounded-full font-bold">
+                              نشط
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-brand-black/50 dark:text-brand-white/50 mt-0.5">
+                          ينتهي: {new Date(p.expiryDate).toLocaleDateString("ar-EG")} •{" "}
+                          الاستخدام: {p.usedCount}
+                          {p.maxUses > 0 ? ` / ${p.maxUses}` : " (غير محدود)"}
+                        </p>
+                        {usagePct !== null && (
+                          <div className="mt-1.5 w-36 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-brand-lime rounded-full"
+                              style={{ width: `${Math.min(usagePct, 100)}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right: actions */}
+                    <div className="flex items-center gap-2">
+                      {/* Toggle active */}
+                      <button
+                        onClick={() => handleToggleActive(p)}
+                        title={p.active ? "إيقاف" : "تفعيل"}
+                        className={`relative w-10 h-5 rounded-full transition-colors ${p.active ? "bg-brand-lime" : "bg-gray-300"}`}
+                      >
+                        <span
+                          className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${p.active ? "translate-x-5" : "translate-x-0.5"}`}
+                        />
+                      </button>
+                      <button
+                        onClick={() => openEdit(p)}
+                        className="p-2 rounded-xl hover:bg-brand-lime/20 text-brand-black/60 dark:text-brand-white/60"
+                        title="تعديل"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(p.id)}
+                        className="p-2 rounded-xl hover:bg-red-50 text-red-500"
+                        title="حذف"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Delete confirmation */}
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="حذف كود الخصم"
+        message="هل أنت متأكد من حذف هذا الكود؟ لن يمكن التراجع."
+        onConfirm={() => { if (confirmDelete) handleDelete(confirmDelete); }}
+        onClose={() => setConfirmDelete(null)}
+      />
+    </div>
+  );
+}
+
+/* ==========================================================
+ *  SHIPPING SETTINGS TAB
+ * ========================================================== */
+function ShippingTab() {
+  const { shippingRates, addShippingRate, updateShippingRate, deleteShippingRate, toast } = useApp();
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  const EMPTY_FORM = { governorate: "", price: 0, active: true };
+  const [form, setForm] = useState(EMPTY_FORM);
+
+  const openCreate = () => {
+    setForm(EMPTY_FORM);
+    setEditingId(null);
+    setShowForm(true);
+  };
+
+  const openEdit = (r: ShippingRate) => {
+    setForm({ governorate: r.governorate, price: r.price, active: r.active });
+    setEditingId(r.id);
+    setShowForm(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.governorate.trim()) { toast("أدخل اسم المحافظة", "error"); return; }
+    if (form.price < 0) { toast("سعر الشحن لازم يكون 0 أو أكتر", "error"); return; }
+
+    try {
+      if (editingId) {
+        await updateShippingRate(editingId, {
+          governorate: form.governorate.trim(),
+          price: form.price,
+          active: form.active,
+        });
+        toast("تم تحديث سعر الشحن ✅");
+      } else {
+        const duplicate = shippingRates.find(
+          (r) => r.governorate.toLowerCase() === form.governorate.trim().toLowerCase()
+        );
+        if (duplicate) { toast("المحافظة دي موجودة بالفعل", "error"); return; }
+
+        const id = "SHIP-" + Date.now();
+        await addShippingRate({
+          id,
+          governorate: form.governorate.trim(),
+          price: form.price,
+          active: form.active,
+        });
+        toast("تم إضافة المحافظة ✅");
+      }
+      setShowForm(false);
+      setEditingId(null);
+    } catch {
+      toast("حصل خطأ، حاول تاني", "error");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteShippingRate(id);
+      toast("تم الحذف");
+    } catch {
+      toast("فشل الحذف", "error");
+    }
+    setConfirmDelete(null);
+  };
+
+  const handleToggleActive = async (r: ShippingRate) => {
+    try {
+      await updateShippingRate(r.id, { active: !r.active });
+      toast(r.active ? "تم إيقاف المحافظة" : "تم تفعيل المحافظة");
+    } catch {
+      toast("حصل خطأ", "error");
+    }
+  };
+
+  // Sort: active first, then alphabetical
+  const sorted = [...shippingRates].sort((a, b) => {
+    if (a.active !== b.active) return a.active ? -1 : 1;
+    return a.governorate.localeCompare(b.governorate);
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="glass rounded-3xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-black text-2xl text-brand-black dark:text-brand-white flex items-center gap-2">
+            🚚 إعدادات الشحن ({shippingRates.length} محافظة)
+          </h2>
+          <Button onClick={openCreate} size="sm">
+            <Plus size={16} /> إضافة محافظة
+          </Button>
+        </div>
+
+        {/* Info note */}
+        <div className="bg-brand-green/10 border border-brand-lime/30 rounded-2xl p-4 mb-6 text-sm text-brand-black/70 dark:text-brand-white/70">
+          💡 سعر الشحن بيتحفظ مع كل طلب وقت إنشائه، فالتغييرات اللي بتعملها دلوقتي مش هتأثر على الطلبات القديمة.
+          المحافظات اللي مش موجودة هنا هيكون شحنها <strong>0 ج.م</strong> تلقائياً.
+        </div>
+
+        {/* Create / Edit form */}
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-brand-lime/10 border border-brand-lime/30 rounded-2xl p-5 mb-6 space-y-4"
+          >
+            <h3 className="font-black text-lg text-brand-black dark:text-brand-white">
+              {editingId ? "✏️ تعديل سعر الشحن" : "➕ محافظة جديدة"}
+            </h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-brand-black/80 dark:text-brand-white/80">
+                  اسم المحافظة (إنجليزي)
+                </label>
+                <input
+                  value={form.governorate}
+                  onChange={(e) => setForm({ ...form, governorate: e.target.value })}
+                  placeholder="Cairo"
+                  disabled={!!editingId}
+                  className="w-full rounded-xl border border-brand-green/20 bg-white/70 dark:bg-brand-black/40 px-4 py-2.5 text-brand-black dark:text-brand-white outline-none focus:border-brand-lime disabled:opacity-60"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-brand-black/80 dark:text-brand-white/80">
+                  سعر الشحن (ج.م)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+                  className="w-full rounded-xl border border-brand-green/20 bg-white/70 dark:bg-brand-black/40 px-4 py-2.5 text-brand-black dark:text-brand-white outline-none focus:border-brand-lime"
+                />
+              </div>
+              <div className="flex items-center gap-3 md:col-span-2">
+                <label className="text-sm font-medium text-brand-black/80 dark:text-brand-white/80">
+                  مفعّل؟
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, active: !form.active })}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${form.active ? "bg-brand-lime" : "bg-gray-300"}`}
+                >
+                  <span
+                    className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.active ? "translate-x-7" : "translate-x-1"}`}
+                  />
+                </button>
+                <span className="text-sm text-brand-black/60 dark:text-brand-white/60">
+                  {form.active ? "مفعّل" : "معطّل"}
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button onClick={handleSave} size="sm">
+                <Save size={15} /> حفظ
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setShowForm(false); setEditingId(null); }}
+              >
+                <X size={15} /> إلغاء
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Shipping rates list */}
+        {sorted.length === 0 ? (
+          <p className="text-center text-brand-black/50 dark:text-brand-white/50 py-10">
+            مفيش محافظات مضافة لسه — ابدأ بإضافة أول محافظة
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {sorted.map((r) => (
+              <div
+                key={r.id}
+                className={`rounded-2xl p-4 border flex items-center justify-between gap-3 transition ${
+                  r.active
+                    ? "bg-white/50 dark:bg-brand-black/30 border-brand-green/10"
+                    : "bg-gray-50 dark:bg-brand-black/20 border-gray-200 dark:border-brand-black/30 opacity-60"
+                }`}
+              >
+                {/* Governorate name + price */}
+                <div className="flex items-center gap-4">
+                  <div>
+                    <p className="font-bold text-brand-black dark:text-brand-white flex items-center gap-2">
+                      {r.governorate}
+                      {!r.active && (
+                        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-bold">
+                          معطّل
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-sm font-black text-brand-green mt-0.5">
+                      {r.price === 0 ? "مجاني 🎉" : `${r.price} ج.م`}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleToggleActive(r)}
+                    title={r.active ? "إيقاف" : "تفعيل"}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${r.active ? "bg-brand-lime" : "bg-gray-300"}`}
+                  >
+                    <span
+                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${r.active ? "translate-x-5" : "translate-x-0.5"}`}
+                    />
+                  </button>
+                  <button
+                    onClick={() => openEdit(r)}
+                    className="p-2 rounded-xl hover:bg-brand-lime/20 text-brand-black/60 dark:text-brand-white/60"
+                    title="تعديل السعر"
+                  >
+                    <Pencil size={15} />
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(r.id)}
+                    className="p-2 rounded-xl hover:bg-red-50 text-red-500"
+                    title="حذف"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Delete confirmation */}
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="حذف محافظة"
+        message="هل أنت متأكد من حذف هذه المحافظة؟"
+        onConfirm={() => { if (confirmDelete) handleDelete(confirmDelete); }}
+        onClose={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }
